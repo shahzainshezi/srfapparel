@@ -38,7 +38,7 @@ export default function CategoryPage() {
             <h2 style={{ fontSize: '2rem', color: '#0f172a', marginBottom: '0.5rem' }}>{category.name} Collection</h2>
             <p style={{ color: '#64748b' }}>Showing {categoryProducts.length} items</p>
           </div>
-          <Link href="/" style={{ color: '#82132B', fontWeight: '600', textDecoration: 'none' }}>
+          <Link href="/" style={{ color: '#721D1D', fontWeight: '600', textDecoration: 'none' }}>
             <i className='bx bx-left-arrow-alt'></i> Back to all products
           </Link>
         </div>
@@ -52,16 +52,34 @@ export default function CategoryPage() {
           </div>
         ) : (
           <div className="product-grid">
-            {categoryProducts.map((product) => (
-              <div key={product.id} className="product-card">
-                <div className="product-image-container">
-                  <Link href={`/product/${product.id}`}>
-                    <img src={product.image} alt={product.title} className="product-image" />
-                  </Link>
-                  <div className="product-image-overlay">
-                    <button className="add-to-cart-btn" onClick={() => addToCart(product)}>Add to Order</button>
+            {categoryProducts.map((product) => {
+              const isSoldOut = product.gallery?.includes('out_of_stock') || false;
+              return (
+                <div key={product.id} className="product-card">
+                  <div className="product-image-container">
+                    <Link href={`/product/${product.id}`}>
+                      <img src={product.image} alt={product.title} className="product-image" />
+                    </Link>
+                    {isSoldOut && (
+                      <span className="shop-card-soldout" style={{ 
+                        position: 'absolute', top: '1rem', left: '1rem', 
+                        background: '#fee2e2', color: '#b91c1c', 
+                        padding: '0.4rem 0.8rem', borderRadius: '50px', 
+                        fontSize: '0.78rem', fontWeight: '800', 
+                        textTransform: 'uppercase', zIndex: 5 
+                      }}>Sold Out</span>
+                    )}
+                    <div className="product-image-overlay">
+                      <button 
+                        className="add-to-cart-btn" 
+                        onClick={() => !isSoldOut && addToCart(product)}
+                        disabled={isSoldOut}
+                        style={isSoldOut ? { background: '#cbd5e1', cursor: 'not-allowed', color: '#64748b' } : {}}
+                      >
+                        {isSoldOut ? "Out of Stock" : "Add to Order"}
+                      </button>
+                    </div>
                   </div>
-                </div>
                 <div className="product-info">
                   <Link href={`/product/${product.id}`} style={{ textDecoration: 'none' }}>
                     <h3 className="product-title">{product.title}</h3>
@@ -78,7 +96,8 @@ export default function CategoryPage() {
                   <span className="product-price">{product.price} <i className='bx bxs-coin-stack'></i></span>
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
         )}
       </div>

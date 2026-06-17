@@ -61,7 +61,7 @@ interface StoreContextType {
   employees: Employee[];
   updateEmployeeBalance: (id: string, newBalance: number) => Promise<void>;
   issueAnnualBucks: () => Promise<void>;
-  addEmployee: (emp: { name: string; email: string; password: string; site: string; balance: number }) => Promise<void>;
+  addEmployee: (emp: { name: string; email: string; password: string; site: string; balance: number; role?: string; created_at?: string }) => Promise<void>;
   editEmployee: (id: string, empData: any) => Promise<void>;
   deleteEmployee: (id: string) => Promise<void>;
   orders: Order[];
@@ -340,18 +340,83 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateEmployeeBalance = async (id: string, newBalance: number) => {
+    const employee = employees.find(e => e.id === id);
+    const prevBalance = employee ? employee.balance : 0;
+    const diff = newBalance - prevBalance;
+
     await supabase.from('employees').update({ balance: newBalance }).eq('id', id);
     setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, balance: newBalance } : emp));
+    
     if (currentUser && id === currentUser.id) {
       setCredits(newBalance);
       const updatedUser = { ...currentUser, balance: newBalance };
       setCurrentUser(updatedUser);
       localStorage.setItem('srf_user', JSON.stringify(updatedUser));
     }
+
+    if (diff !== 0) {
+      const adjId = `ADJ-${Math.floor(100000 + Math.random() * 900000)}`;
+      const adjData = {
+        id: adjId,
+        employee_id: id,
+        total_bucks: Math.abs(diff),
+        status: diff > 0 ? 'Credit' : 'Debit',
+        items_count: 0,
+        details: {
+          type: 'adjustment',
+          description: diff > 0 ? 'Admin added credits' : 'Admin deducted credits',
+          balance_before: prevBalance,
+          balance_after: newBalance,
+          change: diff
+        }
+      };
+
+      try {
+        await supabase.from('orders').insert([adjData]);
+        const localOrder = {
+          id: adjId,
+          date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          total: Math.abs(diff),
+          status: diff > 0 ? 'Credit' : 'Debit',
+          items: 0,
+          details: adjData.details,
+          employee_id: id
+        };
+        setOrders(prev => [localOrder, ...prev]);
+      } catch (err) {
+        console.error("Failed to log balance adjustment transaction:", err);
+      }
+    }
   };
 
   const issueAnnualBucks = async () => {
     await supabase.from('employees').update({ balance: 250 }).neq('id', '');
+    
+    const logs = employees
+      .map(emp => {
+        const prevBalance = emp.balance;
+        const diff = 250 - prevBalance;
+        return { emp, prevBalance, diff };
+      })
+      .filter(x => x.diff !== 0)
+      .map(x => {
+        const adjId = `CRD-${Math.floor(100000 + Math.random() * 900000)}`;
+        return {
+          id: adjId,
+          employee_id: x.emp.id,
+          total_bucks: Math.abs(x.diff),
+          status: x.diff > 0 ? 'Credit' : 'Debit',
+          items_count: 0,
+          details: {
+            type: 'annual_issue',
+            description: 'Annual credit refresh',
+            balance_before: x.prevBalance,
+            balance_after: 250,
+            change: x.diff
+          }
+        };
+      });
+
     setEmployees(prev => prev.map(emp => ({ ...emp, balance: 250 })));
     if (currentUser) {
       setCredits(250);
@@ -359,9 +424,27 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       setCurrentUser(updatedUser);
       localStorage.setItem('srf_user', JSON.stringify(updatedUser));
     }
+
+    if (logs.length > 0) {
+      try {
+        await supabase.from('orders').insert(logs);
+        const localOrders = logs.map(l => ({
+          id: l.id,
+          date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          total: l.total_bucks,
+          status: l.status,
+          items: 0,
+          details: l.details,
+          employee_id: l.employee_id
+        }));
+        setOrders(prev => [...localOrders, ...prev]);
+      } catch (err) {
+        console.error("Failed to log annual bucks issuance transactions:", err);
+      }
+    }
   };
 
-  const addEmployee = async (empData: { name: string; email: string; password: string; site: string; balance: number }) => {
+  const addEmployee = async (empData: { name: string; email: string; password: string; site: string; balance: number; role?: string; created_at?: string }) => {
     // Safely generate employee ID by finding the highest existing ID number
     const maxIdNum = employees.reduce((max, emp) => {
       const match = emp.id.match(/\d+/);
@@ -379,10 +462,10 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       email: empData.email,
       password: empData.password,
       balance: empData.balance,
-      role: 'employee'
+      role: empData.role || 'employee'
     };
-    // site column add only if provided (might not exist in older schemas)
     if (empData.site) insertData.site = empData.site;
+    if (empData.created_at) insertData.created_at = empData.created_at;
     
     const { data, error } = await supabase.from('employees').insert([insertData]).select();
     if (error) throw error;
@@ -398,6 +481,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     if (empData.site) updateData.site = empData.site;
     if (empData.password) updateData.password = empData.password; // Note: Only updates password if provided
     if (empData.role) updateData.role = empData.role;
+    if (empData.created_at) updateData.created_at = empData.created_at;
 
     const { data, error } = await supabase.from('employees').update(updateData).eq('id', id).select();
     if (error) throw error;

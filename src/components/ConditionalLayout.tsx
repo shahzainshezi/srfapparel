@@ -5,7 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 // Pages jahan Header/Footer nahi chahiye
-const NO_LAYOUT_ROUTES = ["/login"];
+const NO_LAYOUT_ROUTES = ["/", "/login", "/admin", "/dashboard"];
 
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

@@ -418,7 +418,7 @@ body {
 
 .hero-badge {
     display: inline-block;
-    background: rgba(130, 19, 43, 0.6); /* #82132B with opacity */
+    background: rgba(130, 19, 43, 0.6); /* #721D1D with opacity */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     color: white;
@@ -530,7 +530,7 @@ body {
 
 /* Infinite Marquee */
 .marquee-section {
-    background: #82132B;
+    background: #721D1D;
     color: white;
     padding: 1.2rem 0;
     overflow: hidden;
@@ -757,13 +757,18 @@ body {
     height: 420px; /* Tall luxury aspect ratio */
     border-radius: 12px;
     overflow: hidden;
-    background: #f1f5f9;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
 }
 
 .product-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    mix-blend-mode: darken;
     transition: transform 0.8s cubic-bezier(0.2, 1, 0.3, 1);
 }
 
@@ -1313,7 +1318,7 @@ body {
 }
 
 .page-hero-highlight {
-    background: linear-gradient(90deg, #ef4444, #82132B);
+    background: linear-gradient(90deg, #ef4444, #721D1D);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -1423,9 +1428,9 @@ body {
 }
 
 .control-btn:hover {
-    background: #82132B;
+    background: #721D1D;
     color: white;
-    border-color: #82132B;
+    border-color: #721D1D;
     transform: translateY(-2px);
 }
 

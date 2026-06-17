@@ -30,7 +30,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
         <div style={{
           width: "50px", height: "50px",
           border: "3px solid rgba(255,255,255,0.1)",
-          borderTopColor: "#82132B",
+          borderTopColor: "#721D1D",
           borderRadius: "50%",
           animation: "spin 0.8s linear infinite"
         }} />

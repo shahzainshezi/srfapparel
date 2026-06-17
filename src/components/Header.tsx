@@ -124,7 +124,7 @@ export default function Header() {
             <Link href="/dashboard" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>My Dashboard</Link>
           )}
           {currentUser?.role === 'admin' && (
-            <Link href="/admin" className="mobile-link" style={{ color: '#82132B' }} onClick={() => setIsMobileMenuOpen(false)}>Admin Panel</Link>
+            <Link href="/admin" className="mobile-link" style={{ color: '#721D1D' }} onClick={() => setIsMobileMenuOpen(false)}>Admin Panel</Link>
           )}
           
           <div style={{ marginTop: 'auto', paddingTop: '2rem', borderTop: '1px solid #e2e8f0' }}>

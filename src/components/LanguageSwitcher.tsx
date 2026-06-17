@@ -30,11 +30,21 @@ export default function LanguageSwitcher() {
     setCurrentLang(lang);
     
     // Set Google Translate cookie
-    const domain = window.location.hostname;
-    // Set for current domain
-    document.cookie = `googtrans=/en/${lang.code}; path=/; domain=${domain}`;
-    // Set for localhost/root
-    document.cookie = `googtrans=/en/${lang.code}; path=/;`;
+    const cookieValue = `/en/${lang.code}`;
+    
+    // 1. Set without domain (host-only)
+    document.cookie = `googtrans=${cookieValue}; path=/;`;
+    
+    // 2. Set for all domain and parent domain combinations (with and without dot prefix)
+    const host = window.location.hostname;
+    const parts = host.split('.');
+    for (let i = 0; i < parts.length - 1; i++) {
+      const domain = parts.slice(i).join('.');
+      if (domain) {
+        document.cookie = `googtrans=${cookieValue}; path=/; domain=${domain};`;
+        document.cookie = `googtrans=${cookieValue}; path=/; domain=.${domain};`;
+      }
+    }
     
     // Reload to apply translation
     window.location.reload();

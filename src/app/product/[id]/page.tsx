@@ -59,9 +59,11 @@ export default function ProductPage() {
     if (product && !activeImage) setActiveImage(product.image);
   }, [sizes, colors, selectedSize, selectedColor, product, activeImage]);
 
-  const galleryImages = product.gallery && product.gallery.length > 0 
-    ? [product.image, ...product.gallery] 
+  const cleanGallery = product.gallery ? product.gallery.filter((g: string) => g !== 'out_of_stock') : [];
+  const galleryImages = cleanGallery.length > 0 
+    ? [product.image, ...cleanGallery] 
     : [product.image];
+  const isSoldOut = product.gallery?.includes('out_of_stock') || false;
 
   return (
     <ProtectedRoute>
@@ -99,7 +101,7 @@ export default function ProductPage() {
                       borderRadius: '12px',
                       overflow: 'hidden',
                       cursor: 'pointer',
-                      border: activeImage === img ? '2px solid #82132B' : '2px solid transparent',
+                      border: activeImage === img ? '2px solid #721D1D' : '2px solid transparent',
                       padding: '4px',
                       background: '#fff',
                       transition: 'all 0.2s'
@@ -188,10 +190,15 @@ export default function ProductPage() {
 
             <button 
               className="add-to-cart-btn" 
-              onClick={() => addToCart(product, selectedSize, selectedColor)}
-              style={{ width: '100%', height: '65px', fontSize: '1.2rem', borderRadius: '16px', marginBottom: '3rem' }}
+              onClick={() => !isSoldOut && addToCart(product, selectedSize, selectedColor)}
+              disabled={isSoldOut}
+              style={{ 
+                width: '100%', height: '65px', fontSize: '1.2rem', borderRadius: '16px', marginBottom: '3rem',
+                opacity: isSoldOut ? 0.6 : 1,
+                cursor: isSoldOut ? 'not-allowed' : 'pointer'
+              }}
             >
-              Add to Order <i className='bx bx-cart-alt' style={{ fontSize: '1.5rem' }}></i>
+              {isSoldOut ? "Out of Stock" : "Add to Order"} <i className='bx bx-cart-alt' style={{ fontSize: '1.5rem' }}></i>
             </button>
 
             {/* Premium Details Tabs */}

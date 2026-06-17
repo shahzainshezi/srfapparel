@@ -25,7 +25,7 @@ export default function Preloader() {
       style={{
         position: "fixed",
         inset: 0,
-        backgroundColor: "#0f172a", // Premium dark background
+        backgroundColor: "#181313", // Premium dark background
         zIndex: 99999,
         display: "flex",
         flexDirection: "column",

@@ -23,6 +23,44 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
+  // Language switcher state & logic
+  const [currentLang, setCurrentLang] = useState('en');
+
+  useEffect(() => {
+    const match = document.cookie.match(/(^|;) ?googtrans=([^;]*)(;|$)/);
+    if (match) {
+      const parts = match[2].split('/');
+      const code = parts[parts.length - 1];
+      if (code) {
+        setCurrentLang(code);
+      }
+    }
+  }, []);
+
+  const changeLanguage = (langCode: string) => {
+    setCurrentLang(langCode);
+    
+    // Set Google Translate cookie
+    const cookieValue = `/en/${langCode}`;
+    
+    // 1. Set without domain (host-only)
+    document.cookie = `googtrans=${cookieValue}; path=/;`;
+    
+    // 2. Set for all domain and parent domain combinations (with and without dot prefix)
+    const host = window.location.hostname;
+    const parts = host.split('.');
+    for (let i = 0; i < parts.length - 1; i++) {
+      const domain = parts.slice(i).join('.');
+      if (domain) {
+        document.cookie = `googtrans=${cookieValue}; path=/; domain=${domain};`;
+        document.cookie = `googtrans=${cookieValue}; path=/; domain=.${domain};`;
+      }
+    }
+    
+    // Reload to apply translation
+    window.location.reload();
+  };
+
   // Slider state
   const slides = ['/slide1.jpg', '/slide2.jpg', '/slide3.jpg', '/slide4.jpg', '/slide5.jpg'];
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -71,6 +109,31 @@ function LoginForm() {
       overflowX: "hidden",
       overflowY: "auto"
     }}>
+      {/* ===== FLOATING LANGUAGE SWITCHER ===== */}
+      <div style={{
+        position: "absolute",
+        top: "1.5rem",
+        right: "1.5rem",
+        zIndex: 20
+      }}>
+        <div className="lang-switcher">
+          <button 
+            type="button"
+            onClick={() => changeLanguage('en')} 
+            className={`lang-btn ${currentLang === 'en' ? 'active' : ''}`}
+          >
+            EN
+          </button>
+          <button 
+            type="button"
+            onClick={() => changeLanguage('es')} 
+            className={`lang-btn ${currentLang === 'es' ? 'active' : ''}`}
+          >
+            ES
+          </button>
+        </div>
+      </div>
+
       {/* ===== BACKGROUND IMAGE SLIDER ===== */}
       <div style={{
         position: "fixed",
@@ -121,7 +184,7 @@ function LoginForm() {
               width: i === currentSlide ? "28px" : "8px",
               height: "8px",
               borderRadius: "50px",
-              background: i === currentSlide ? "#82132B" : "rgba(255,255,255,0.4)",
+              background: i === currentSlide ? "#721D1D" : "rgba(255,255,255,0.4)",
               border: "none",
               cursor: "pointer",
               padding: 0,
@@ -162,8 +225,8 @@ function LoginForm() {
           display: "inline-flex",
           alignItems: "center",
           gap: "0.5rem",
-          background: "rgba(130,19,43,0.4)",
-          border: "1px solid rgba(130,19,43,0.6)",
+          background: "rgba(114,29,29,0.4)",
+          border: "1px solid rgba(114,29,29,0.6)",
           borderRadius: "50px",
           padding: "0.4rem 1rem",
           marginBottom: "1.5rem",
@@ -187,7 +250,7 @@ function LoginForm() {
         }}>
           Your Gear.<br />
           <span style={{
-            background: "linear-gradient(90deg, #ef4444, #82132B)",
+            background: "linear-gradient(90deg, #d32f2f, #721D1D)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent"
           }}>Your Credits.</span>
@@ -301,7 +364,7 @@ function LoginForm() {
                     transition: "border-color 0.3s, box-shadow 0.3s",
                     boxSizing: "border-box"
                   }}
-                  onFocus={e => { e.target.style.borderColor = "#82132B"; e.target.style.boxShadow = "0 0 0 3px rgba(130,19,43,0.15)"; }}
+                  onFocus={e => { e.target.style.borderColor = "#721D1D"; e.target.style.boxShadow = "0 0 0 3px rgba(114,29,29,0.15)"; }}
                   onBlur={e => { e.target.style.borderColor = "rgba(255,255,255,0.3)"; e.target.style.boxShadow = "none"; }}
                 />
               </div>
@@ -337,7 +400,7 @@ function LoginForm() {
                     transition: "border-color 0.3s, box-shadow 0.3s",
                     boxSizing: "border-box"
                   }}
-                  onFocus={e => { e.target.style.borderColor = "#82132B"; e.target.style.boxShadow = "0 0 0 3px rgba(130,19,43,0.15)"; }}
+                  onFocus={e => { e.target.style.borderColor = "#721D1D"; e.target.style.boxShadow = "0 0 0 3px rgba(114,29,29,0.15)"; }}
                   onBlur={e => { e.target.style.borderColor = "rgba(255,255,255,0.3)"; e.target.style.boxShadow = "none"; }}
                 />
                 <button
@@ -363,15 +426,15 @@ function LoginForm() {
               style={{
                 width: "100%", padding: "1rem",
                 background: isLoading
-                  ? "rgba(130,19,43,0.5)"
-                  : "linear-gradient(135deg, #82132B 0%, #c21807 100%)",
+                  ? "rgba(114,29,29,0.5)"
+                  : "linear-gradient(135deg, #721D1D 0%, #5c0d1e 100%)",
                 border: "none", borderRadius: "10px", color: "white",
                 fontSize: "0.95rem", fontWeight: "800",
                 letterSpacing: "1.5px", textTransform: "uppercase",
                 cursor: isLoading ? "not-allowed" : "pointer",
                 transition: "all 0.3s",
                 marginTop: "0.5rem",
-                boxShadow: isLoading ? "none" : "0 8px 25px rgba(130,19,43,0.45)",
+                boxShadow: isLoading ? "none" : "0 8px 25px rgba(114,29,29,0.45)",
                 display: "flex", alignItems: "center",
                 justifyContent: "center", gap: "0.8rem"
               }}
@@ -410,6 +473,40 @@ function LoginForm() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Language Button Toggler */
+        .lang-switcher {
+          display: flex;
+          justify-content: center;
+          gap: 0.4rem;
+          background: rgba(0, 0, 0, 0.4);
+          padding: 0.2rem;
+          border-radius: 50px;
+          border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .lang-btn {
+          background: transparent;
+          border: none;
+          color: rgba(255,255,255,0.6);
+          padding: 0.4rem 1rem;
+          border-radius: 50px;
+          font-size: 0.75rem;
+          font-weight: 800;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+
+        .lang-btn.active {
+          background: #721D1D;
+          color: white;
+        }
+
+        .lang-btn:hover:not(.active) {
+          background: rgba(255,255,255,0.1);
+          color: white;
+        }
+
         input::placeholder { color: #94a3b8 !important; }
         input:-webkit-autofill {
           -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
