@@ -31,6 +31,7 @@ export interface Employee {
   balance: number;
   site: string;
   role: string; // 'super_admin' | 'employee'
+  created_at?: string;
 }
 
 interface StoreContextType {
@@ -48,6 +49,7 @@ interface StoreContextType {
   isAuthLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  resetPassword: (email: string, employeeId: string, newPassword: string) => Promise<boolean>;
 
   // LIVE DATA EXPORTS
   globalProducts: any[];
@@ -183,6 +185,31 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     setCart([]);
     localStorage.removeItem('srf_user');
     localStorage.removeItem('srf_cart');
+  };
+
+  const resetPassword = async (email: string, employeeId: string, newPassword: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('email', email)
+        .eq('id', employeeId)
+        .single();
+
+      if (error || !data) return false;
+
+      const { error: updateError } = await supabase
+        .from('employees')
+        .update({ password: newPassword })
+        .eq('id', employeeId);
+
+      if (updateError) return false;
+
+      setEmployees(prev => prev.map(emp => emp.id === employeeId ? { ...emp, password: newPassword } : emp));
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   // Keep cart in localStorage
@@ -519,6 +546,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
         isAuthLoading,
         login,
         logout,
+        resetPassword,
         globalProducts,
         categories,
         addProduct,
