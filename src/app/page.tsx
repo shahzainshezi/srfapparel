@@ -1978,13 +1978,13 @@ export default function Home() {
                         if (!acc[parent]) acc[parent] = [];
                         acc[parent].push(cat);
                         return acc;
-                      }, {} as Record<string, typeof categories>)
+                      }, {} as Record<string, any>)
                     ).map(([parent, cats]) => {
-                      const hasSubs = cats.some(c => c.name.includes(' > '));
+                      const hasSubs = (cats as any[]).some((c: any) => c.name.includes(' > '));
                       if (hasSubs) {
                         return (
                           <optgroup key={parent} label={parent}>
-                            {cats.map(cat => {
+                            {(cats as any[]).map((cat: any) => {
                               const parts = cat.name.split(' > ');
                               const displayName = parts.length > 1 ? parts[1] : parts[0];
                               return (
@@ -1996,7 +1996,7 @@ export default function Home() {
                           </optgroup>
                         );
                       } else {
-                        return cats.map(cat => (
+                        return (cats as any[]).map((cat: any) => (
                           <option key={cat.id} value={cat.id}>
                             {cat.name}
                           </option>
