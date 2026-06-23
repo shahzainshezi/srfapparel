@@ -610,15 +610,7 @@ export default function Home() {
                   </>
                 )}
 
-                {activeTab === 'employees' && (
-                  <button 
-                    className="btn-primary-custom" 
-                    onClick={() => { setEditingEmpId(null); setEmpForm({ name: '', email: '', password: '', site: 'Apprentice', balance: '50', role: 'employee', hireDate: '' }); setIsEmpModalOpen(true); }}
-                    style={{ background: 'white', color: '#721D1D', boxShadow: 'none' }}
-                  >
-                    <i className='bx bx-plus' style={{ fontWeight: 'bold' }}></i> ADD EMPLOYEE
-                  </button>
-                )}
+
               </div>
             </div>
           </header>
