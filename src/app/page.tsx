@@ -24,6 +24,7 @@ export default function Home() {
   const [isSaving, setIsSaving] = useState(false);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [parentCategorySelection, setParentCategorySelection] = useState('');
   const [editingCategory, setEditingCategory] = useState<{id: number, name: string} | null>(null);
 
   // Add/Edit Employee Modal State
@@ -61,7 +62,7 @@ export default function Home() {
   const [activeDetailTab, setActiveDetailTab] = useState('details');
   
   // Checkout states
-  const [deliverySite, setDeliverySite] = useState("Site 42 - Main Logistics Hub");
+  const [deliverySite, setDeliverySite] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
   const [orderPlaced, setOrderPlaced] = useState(false);
 
@@ -192,8 +193,12 @@ export default function Home() {
 
   const handleAddCategory = async () => {
     if (!newCategoryName) return;
-    await addCategory(newCategoryName);
+    const finalName = parentCategorySelection 
+      ? `${parentCategorySelection} > ${newCategoryName.trim()}`
+      : newCategoryName.trim();
+    await addCategory(finalName);
     setNewCategoryName('');
+    setParentCategorySelection('');
   };
 
   const handleLogout = () => {
@@ -248,10 +253,43 @@ export default function Home() {
   const totalOrdersCount = orders.filter(o => o.items > 0).length;
   const pendingOrdersCount = orders.filter(o => o.items > 0 && o.status === 'Processing').length;
 
+  // Category & Subcategory logic
+  const uniqueParents = Array.from(new Set(categories.map(c => c.name.split(' > ')[0])));
+  
+  let activeParent = 'all';
+  if (selectedCategory !== 'all') {
+    if (selectedCategory.startsWith('parent:')) {
+      activeParent = selectedCategory.replace('parent:', '');
+    } else {
+      const selectedCatObj = categories.find(c => c.id.toString() === selectedCategory);
+      if (selectedCatObj) {
+        activeParent = selectedCatObj.name.split(' > ')[0];
+      }
+    }
+  }
+
+  const activeParentSubs = categories.filter(c => {
+    const parts = c.name.split(' > ');
+    return parts.length > 1 && parts[0] === activeParent;
+  });
+
   // Filter products for Shop
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || product.category_id?.toString() === selectedCategory;
+    
+    let matchesCategory = false;
+    if (selectedCategory === 'all') {
+      matchesCategory = true;
+    } else if (selectedCategory.startsWith('parent:')) {
+      const parentName = selectedCategory.replace('parent:', '');
+      const matchingCatIds = categories
+        .filter(c => c.name === parentName || c.name.startsWith(parentName + ' > '))
+        .map(c => c.id);
+      matchesCategory = matchingCatIds.includes(product.category_id);
+    } else {
+      matchesCategory = product.category_id?.toString() === selectedCategory;
+    }
+    
     return matchesSearch && matchesCategory;
   });
 
@@ -321,12 +359,14 @@ export default function Home() {
                   >
                     <i className='bx bx-category'></i> Categories
                   </button>
+                  {/*
                   <button 
                     onClick={() => { setActiveTab('srf_credits'); setSelectedProductId(null); setIsSidebarOpen(false); }}
                     className={`nav-item ${activeTab === 'srf_credits' ? 'active' : ''}`}
                   >
                     <i className='bx bx-coin-stack'></i> SRF Credits
                   </button>
+                  */}
                 </>
               )}
 
@@ -411,165 +451,180 @@ export default function Home() {
         {/* ===== MAIN CONTENT AREA ===== */}
         <main className="admin-main">
           
-          {/* Header with Grid Pattern (Only render if active tab is NOT 'shop' since 'shop' has its own banner) */}
-          {activeTab !== 'shop' && (
-            <header className="admin-header">
-              <div className="header-grid-overlay"></div>
-              
-              {/* Mobile Header Toolbar */}
-              <div className="mobile-header-bar">
-                <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-trigger">
-                  <i className='bx bx-menu'></i>
-                </button>
-                <img src="/logo.webp" alt="S.R. Freeman" className="mobile-logo" />
-                <button onClick={() => setIsCartOpen(true)} className="mobile-cart-trigger" style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.8rem', cursor: 'pointer', position: 'relative', padding: 0, display: 'flex', alignItems: 'center' }}>
-                  <i className='bx bx-shopping-bag'></i>
-                  {cart.length > 0 && (
-                    <span style={{ position: 'absolute', top: '-6px', right: '-8px', background: '#721D1D', color: 'white', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '1.5px solid #0f172a' }}>
-                      {cart.length}
-                    </span>
-                  )}
-                </button>
+          {/* Header with Grid Pattern */}
+          <header className="admin-header">
+            <div className="header-grid-overlay"></div>
+            
+            {/* Mobile Header Toolbar */}
+            <div className="mobile-header-bar">
+              <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-trigger">
+                <i className='bx bx-menu'></i>
+              </button>
+              <img src="/logo.webp" alt="S.R. Freeman" className="mobile-logo" />
+              <button onClick={() => setIsCartOpen(true)} className="mobile-cart-trigger" style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.8rem', cursor: 'pointer', position: 'relative', padding: 0, display: 'flex', alignItems: 'center' }}>
+                <i className='bx bx-shopping-bag'></i>
+                {cart.length > 0 && (
+                  <span style={{ position: 'absolute', top: '-6px', right: '-8px', background: '#721D1D', color: 'white', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '1.5px solid #0f172a' }}>
+                    {cart.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            <div className="header-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '2rem', flexWrap: 'wrap' }}>
+              <div>
+                <div className="header-pretitle">
+                  {activeTab === 'shop' ? '✦ EMPLOYEE STORE' : 'S.R. FREEMAN'}
+                </div>
+                <h1 className="header-title">
+                  {activeTab === 'orders' ? 'ALL ORDERS' : 
+                   activeTab === 'employees' ? 'EMPLOYEES' : 
+                   activeTab === 'inventory' ? 'PRODUCTS' :
+                   activeTab === 'categories' ? 'CATEGORIES' :
+                   activeTab === 'srf_credits' ? 'SRF CREDITS' :
+                   activeTab === 'my_orders' ? 'MY ORDERS' :
+                   activeTab === 'shop' ? (
+                     <>YOUR GEAR.<br />YOUR CREDITS.</>
+                   ) :
+                   currentUser?.role === 'super_admin' ? 'DASHBOARD' : 'EMPLOYEE PORTAL'}
+                </h1>
+                <div className="header-subtitle">
+                  {activeTab === 'orders' ? 'MANAGE AND FULFILL EMPLOYEE ORDERS' :
+                   activeTab === 'employees' ? 'MANAGE TEAM MEMBERS AND SRF CREDITS' :
+                   activeTab === 'inventory' ? 'MANAGE CATALOG ITEMS AND INVENTORY' :
+                   activeTab === 'categories' ? 'MANAGE PRODUCT CATEGORIES' :
+                   activeTab === 'srf_credits' ? 'ISSUE AND MANAGE EMPLOYEE CREDITS' :
+                   activeTab === 'my_orders' ? 'TRACK YOUR WORKWEAR ORDERS AND DELIVERY STATUS' :
+                   activeTab === 'shop' ? 'Company apparel, earned by your crew. Spend your SRF Credits below.' :
+                   currentUser?.role === 'super_admin' ? 'SRF APPAREL — COMMAND CENTER' :
+                   `Welcome back, ${currentUser?.name || 'User'}! • Balance: ${credits} Bucks`}
+                </div>
               </div>
 
-              <div className="header-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '2rem', flexWrap: 'wrap' }}>
-                <div>
-                  <div className="header-pretitle">S.R. FREEMAN</div>
-                  <h1 className="header-title">
-                    {activeTab === 'orders' ? 'ALL ORDERS' : 
-                     activeTab === 'employees' ? 'EMPLOYEES' : 
-                     activeTab === 'inventory' ? 'PRODUCTS' :
-                     activeTab === 'categories' ? 'CATEGORIES' :
-                     activeTab === 'srf_credits' ? 'SRF CREDITS' :
-                     currentUser?.role === 'super_admin' ? 'DASHBOARD' : 'EMPLOYEE PORTAL'}
-                  </h1>
-                  <div className="header-subtitle">
-                    {activeTab === 'orders' ? 'MANAGE AND FULFILL EMPLOYEE ORDERS' :
-                     activeTab === 'employees' ? 'MANAGE TEAM MEMBERS AND SRF CREDITS' :
-                     activeTab === 'inventory' ? 'MANAGE CATALOG ITEMS AND INVENTORY' :
-                     activeTab === 'categories' ? 'MANAGE PRODUCT CATEGORIES' :
-                     activeTab === 'srf_credits' ? 'ISSUE AND MANAGE EMPLOYEE CREDITS' :
-                     currentUser?.role === 'super_admin' ? 'SRF APPAREL — COMMAND CENTER' :
-                     `Welcome back, ${currentUser?.name || 'User'}! • Balance: ${credits} Bucks`}
+              {/* Right-aligned Header content based on activeTab */}
+              <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                {activeTab === 'shop' && (
+                  <div className="credits-glass-card" style={{ margin: 0 }}>
+                    <span className="credits-glass-val">
+                      {credits.toLocaleString()} <i className='bx bxs-coin-stack' style={{ fontSize: '2rem', verticalAlign: 'middle', color: '#fbbf24' }}></i>
+                    </span>
+                    <span className="credits-glass-lbl" style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem', fontWeight: 'bold' }}>SRF Credits Available</span>
                   </div>
-                </div>
+                )}
 
-                {/* Right-aligned Header content based on activeTab */}
-                <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  {activeTab === 'orders' && (
-                    <div className="header-select-wrapper" style={{ position: 'relative' }}>
-                      <select 
-                        value={selectedStatusFilter}
-                        onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                        className="header-filter-select"
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.08)',
-                          border: '1px solid rgba(255, 255, 255, 0.15)',
-                          borderRadius: '8px',
-                          color: 'white',
-                          padding: '0.6rem 2.5rem 0.6rem 1.2rem',
-                          fontSize: '0.9rem',
-                          fontWeight: '600',
-                          outline: 'none',
-                          cursor: 'pointer',
-                          appearance: 'none',
-                          WebkitAppearance: 'none',
-                          fontFamily: 'var(--font-body)'
-                        }}
-                      >
-                        <option value="All statuses" style={{ background: '#181313', color: 'white' }}>All statuses</option>
-                        <option value="Pending" style={{ background: '#181313', color: 'white' }}>Pending</option>
-                        <option value="Approved" style={{ background: '#181313', color: 'white' }}>Approved</option>
-                        <option value="Fulfilling" style={{ background: '#181313', color: 'white' }}>Fulfilling</option>
-                        <option value="Shipped" style={{ background: '#181313', color: 'white' }}>Shipped</option>
-                        <option value="Delivered" style={{ background: '#181313', color: 'white' }}>Delivered</option>
-                        <option value="Cancelled" style={{ background: '#181313', color: 'white' }}>Cancelled</option>
-                      </select>
-                      <i className='bx bx-chevron-down' style={{
+                {activeTab === 'orders' && (
+                  <div className="header-select-wrapper" style={{ position: 'relative' }}>
+                    <select 
+                      value={selectedStatusFilter}
+                      onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                      className="header-filter-select"
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        borderRadius: '8px',
+                        color: 'white',
+                        padding: '0.6rem 2.5rem 0.6rem 1.2rem',
+                        fontSize: '0.9rem',
+                        fontWeight: '600',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        fontFamily: 'var(--font-body)'
+                      }}
+                    >
+                      <option value="All statuses" style={{ background: '#181313', color: 'white' }}>All statuses</option>
+                      <option value="Pending" style={{ background: '#181313', color: 'white' }}>Pending</option>
+                      <option value="Approved" style={{ background: '#181313', color: 'white' }}>Approved</option>
+                      <option value="Fulfilling" style={{ background: '#181313', color: 'white' }}>Fulfilling</option>
+                      <option value="Shipped" style={{ background: '#181313', color: 'white' }}>Shipped</option>
+                      <option value="Delivered" style={{ background: '#181313', color: 'white' }}>Delivered</option>
+                      <option value="Cancelled" style={{ background: '#181313', color: 'white' }}>Cancelled</option>
+                    </select>
+                    <i className='bx bx-chevron-down' style={{
+                      position: 'absolute',
+                      right: '0.9rem',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: 'rgba(255,255,255,0.6)',
+                      pointerEvents: 'none',
+                      fontSize: '1.1rem'
+                    }}></i>
+                  </div>
+                )}
+
+                {activeTab === 'inventory' && (
+                  <>
+                    <div className="header-search-wrapper" style={{ position: 'relative', width: '240px' }}>
+                      <i className='bx bx-search' style={{
                         position: 'absolute',
-                        right: '0.9rem',
+                        left: '0.9rem',
                         top: '50%',
                         transform: 'translateY(-50%)',
                         color: 'rgba(255,255,255,0.6)',
                         pointerEvents: 'none',
                         fontSize: '1.1rem'
                       }}></i>
-                    </div>
-                  )}
-
-                  {activeTab === 'inventory' && (
-                    <>
-                      <div className="header-search-wrapper" style={{ position: 'relative', width: '240px' }}>
-                        <i className='bx bx-search' style={{
-                          position: 'absolute',
-                          left: '0.9rem',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          color: 'rgba(255,255,255,0.6)',
-                          pointerEvents: 'none',
-                          fontSize: '1.1rem'
-                        }}></i>
-                        <input
-                          type="text"
-                          value={inventorySearchQuery}
-                          onChange={(e) => setInventorySearchQuery(e.target.value)}
-                          placeholder="Search products..."
-                          style={{
-                            background: 'rgba(255, 255, 255, 0.08)',
-                            border: '1px solid rgba(255, 255, 255, 0.15)',
-                            borderRadius: '8px',
-                            color: 'white',
-                            padding: '0.6rem 1rem 0.6rem 2.4rem',
-                            fontSize: '0.9rem',
-                            fontWeight: '500',
-                            outline: 'none',
-                            width: '100%',
-                            fontFamily: 'var(--font-body)',
-                            transition: 'all 0.2s',
-                          }}
-                          className="header-search-input-field"
-                        />
-                      </div>
-                      <button 
-                        onClick={() => handleOpenModal()}
-                        style={{ 
-                          background: 'white', 
-                          color: '#721D1D', 
-                          border: 'none', 
-                          borderRadius: '50px', 
-                          padding: '0.7rem 1.6rem', 
-                          fontWeight: '800', 
-                          fontSize: '0.82rem', 
-                          letterSpacing: '1px', 
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.4rem',
-                          textTransform: 'uppercase',
-                          whiteSpace: 'nowrap'
+                      <input
+                        type="text"
+                        value={inventorySearchQuery}
+                        onChange={(e) => setInventorySearchQuery(e.target.value)}
+                        placeholder="Search products..."
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          borderRadius: '8px',
+                          color: 'white',
+                          padding: '0.6rem 1rem 0.6rem 2.4rem',
+                          fontSize: '0.9rem',
+                          fontWeight: '500',
+                          outline: 'none',
+                          width: '100%',
+                          fontFamily: 'var(--font-body)',
+                          transition: 'all 0.2s',
                         }}
-                      >
-                        <i className='bx bx-plus' style={{ fontWeight: '900', fontSize: '1rem' }}></i> ADD PRODUCT
-                      </button>
-                    </>
-                  )}
-
-                  {activeTab === 'employees' && (
+                        className="header-search-input-field"
+                      />
+                    </div>
                     <button 
-                      className="btn-primary-custom" 
-                      onClick={() => { setEditingEmpId(null); setEmpForm({ name: '', email: '', password: '', site: 'Apprentice', balance: '50', role: 'employee', hireDate: '' }); setIsEmpModalOpen(true); }}
-                      style={{ background: 'white', color: '#721D1D', boxShadow: 'none' }}
+                      onClick={() => handleOpenModal()}
+                      style={{ 
+                        background: 'white', 
+                        color: '#721D1D', 
+                        border: 'none', 
+                        borderRadius: '50px', 
+                        padding: '0.7rem 1.6rem', 
+                        fontWeight: '800', 
+                        fontSize: '0.82rem', 
+                        letterSpacing: '1px', 
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        textTransform: 'uppercase',
+                        whiteSpace: 'nowrap'
+                      }}
                     >
-                      <i className='bx bx-plus' style={{ fontWeight: 'bold' }}></i> ADD EMPLOYEE
+                      <i className='bx bx-plus' style={{ fontWeight: '900', fontSize: '1rem' }}></i> ADD PRODUCT
                     </button>
-                  )}
-                </div>
+                  </>
+                )}
+
+                {activeTab === 'employees' && (
+                  <button 
+                    className="btn-primary-custom" 
+                    onClick={() => { setEditingEmpId(null); setEmpForm({ name: '', email: '', password: '', site: 'Apprentice', balance: '50', role: 'employee', hireDate: '' }); setIsEmpModalOpen(true); }}
+                    style={{ background: 'white', color: '#721D1D', boxShadow: 'none' }}
+                  >
+                    <i className='bx bx-plus' style={{ fontWeight: 'bold' }}></i> ADD EMPLOYEE
+                  </button>
+                )}
               </div>
-            </header>
-          )}
+            </div>
+          </header>
 
           {/* Page Body Wrapper */}
-          <div className="admin-body" style={activeTab === 'shop' ? { padding: '2rem' } : {}}>
+          <div className="admin-body">
             
             {/* 0. SHOP TAB */}
             {activeTab === 'shop' && (
@@ -734,46 +789,6 @@ export default function Home() {
                   
                   /* --- B. STANDARD PRODUCTS GRID BROWSE VIEW --- */
                   <>
-                  {/* Shop Banner with Construction Site Background */}
-                  <div className="shop-banner">
-                    <div className="shop-banner-overlay"></div>
-                    
-                    {/* Mobile Header Trigger in Shop Banner */}
-                    <div className="shop-mobile-bar">
-                      <button onClick={() => setIsSidebarOpen(true)} className="mobile-menu-trigger">
-                        <i className='bx bx-menu'></i>
-                      </button>
-                      <img src="/logo.webp" alt="S.R. Freeman" className="mobile-logo" />
-                      <button onClick={() => setIsCartOpen(true)} className="mobile-cart-trigger" style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.8rem', cursor: 'pointer', position: 'relative', padding: 0, display: 'flex', alignItems: 'center' }}>
-                        <i className='bx bx-shopping-bag'></i>
-                        {cart.length > 0 && (
-                          <span style={{ position: 'absolute', top: '-6px', right: '-8px', background: '#721D1D', color: 'white', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '1.5px solid #0f172a' }}>
-                            {cart.length}
-                          </span>
-                        )}
-                      </button>
-                    </div>
-
-                    <div className="shop-banner-left">
-                      <div className="badge-store">✦ EMPLOYEE STORE</div>
-                      <h1 className="banner-store-title">
-                        YOUR GEAR.<br />
-                        YOUR CREDITS.
-                      </h1>
-                      <p className="banner-store-desc">
-                        Company apparel, earned by your crew. Spend your SRF Credits below.
-                      </p>
-                    </div>
-
-                    <div className="shop-banner-right">
-                      <div className="credits-glass-card">
-                        <span className="credits-glass-val">
-                          {credits.toLocaleString()} <i className='bx bxs-coin-stack' style={{ fontSize: '2rem', verticalAlign: 'middle', color: '#fbbf24' }}></i>
-                        </span>
-                        <span className="credits-glass-lbl">SRF Credits Available</span>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Filter and Search Bar */}
                   <div className="shop-filter-bar">
@@ -788,22 +803,54 @@ export default function Home() {
                       />
                     </div>
 
-                    <div className="shop-categories-filter">
-                      <button 
-                        onClick={() => setSelectedCategory('all')} 
-                        className={`category-pill ${selectedCategory === 'all' ? 'active' : ''}`}
-                      >
-                        All
-                      </button>
-                      {categories.map(cat => (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                      {/* Top-level Parent Category Filter */}
+                      <div className="shop-categories-filter">
                         <button 
-                          key={cat.id} 
-                          onClick={() => setSelectedCategory(cat.id.toString())} 
-                          className={`category-pill ${selectedCategory === cat.id.toString() ? 'active' : ''}`}
+                          onClick={() => setSelectedCategory('all')} 
+                          className={`category-pill ${selectedCategory === 'all' ? 'active' : ''}`}
                         >
-                          {cat.name}
+                          All
                         </button>
-                      ))}
+                        {uniqueParents.map(parentName => {
+                          const isActive = activeParent === parentName;
+                          return (
+                            <button 
+                              key={parentName} 
+                              onClick={() => setSelectedCategory(`parent:${parentName}`)} 
+                              className={`category-pill ${isActive ? 'active' : ''}`}
+                            >
+                              {parentName}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Sub-category Filter (only shown when a parent is active and has subcategories) */}
+                      {activeParent !== 'all' && activeParentSubs.length > 0 && (
+                        <div className="shop-categories-filter sub-filter" style={{ paddingLeft: '1rem', borderLeft: '3px solid #721D1D', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <button 
+                            onClick={() => setSelectedCategory(`parent:${activeParent}`)} 
+                            className={`category-pill sub-pill ${selectedCategory === `parent:${activeParent}` ? 'active' : ''}`}
+                            style={{ fontSize: '0.82rem', padding: '0.4rem 1rem' }}
+                          >
+                            All {activeParent}
+                          </button>
+                          {activeParentSubs.map(subCat => {
+                            const displayName = subCat.name.split(' > ')[1];
+                            return (
+                              <button 
+                                key={subCat.id} 
+                                onClick={() => setSelectedCategory(subCat.id.toString())} 
+                                className={`category-pill sub-pill ${selectedCategory === subCat.id.toString() ? 'active' : ''}`}
+                                style={{ fontSize: '0.82rem', padding: '0.4rem 1rem' }}
+                              >
+                                {displayName}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     <div className="shop-items-count">
@@ -1111,22 +1158,7 @@ export default function Home() {
             {/* 3. EMPLOYEES TAB */}
             {activeTab === 'employees' && (
               <div className="tab-pane">
-                <div className="pane-header-actions">
-                  <div>
-                    <h2 className="pane-title">Employee Accounts</h2>
-                    <p className="pane-desc">Manage employee directory and view current credits</p>
-                  </div>
-                  <div className="pane-actions-row">
-                    <button className="btn-secondary-custom" onClick={issueAnnualBucks}>
-                      <i className='bx bx-refresh'></i> Issue Annual Bucks
-                    </button>
-                    <button className="btn-primary-custom" onClick={() => { setEditingEmpId(null); setEmpForm({ name: '', email: '', password: '', site: 'Apprentice', balance: '50', role: 'employee', hireDate: '' }); setIsEmpModalOpen(true); }}>
-                      <i className='bx bx-user-plus'></i> Add Employee
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-start', margin: '-0.5rem 0 1.5rem 0' }}>
+                <div className="pane-header-actions" style={{ marginBottom: '1.5rem' }}>
                   <div className="shop-search-wrapper" style={{ width: '100%', maxWidth: '400px', position: 'relative' }}>
                     <i className='bx bx-search shop-search-icon' style={{ position: 'absolute', left: '1.2rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '1.2rem' }}></i>
                     <input 
@@ -1137,6 +1169,14 @@ export default function Home() {
                       className="shop-search-input"
                       style={{ paddingLeft: '3rem', width: '100%', height: '46px', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none' }}
                     />
+                  </div>
+                  <div className="pane-actions-row">
+                    <button className="btn-secondary-custom" onClick={issueAnnualBucks}>
+                      <i className='bx bx-refresh'></i> Issue Annual Bucks
+                    </button>
+                    <button className="btn-primary-custom" onClick={() => { setEditingEmpId(null); setEmpForm({ name: '', email: '', password: '', site: 'Apprentice', balance: '50', role: 'employee', hireDate: '' }); setIsEmpModalOpen(true); }}>
+                      <i className='bx bx-user-plus'></i> Add Employee
+                    </button>
                   </div>
                 </div>
 
@@ -1351,21 +1391,34 @@ export default function Home() {
             {/* 5. CATEGORIES TAB */}
             {activeTab === 'categories' && (
               <div className="tab-pane">
-                <div className="pane-header">
-                  <h2 className="pane-title">Categories</h2>
-                  <p className="pane-desc">Organize catalog items into collections</p>
-                </div>
+
 
                 <div className="categories-card card-shadow">
-                  <div className="add-category-bar">
-                    <input 
-                      type="text" 
-                      value={newCategoryName} 
-                      onChange={e => setNewCategoryName(e.target.value)} 
-                      placeholder="Enter new category name..." 
-                      className="category-input"
-                    />
-                    <button onClick={handleAddCategory} className="btn-primary-custom">Add Category</button>
+                  <div className="add-category-bar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '2rem' }}>
+                    <div style={{ flex: '1', minWidth: '200px' }}>
+                      <input 
+                        type="text" 
+                        value={newCategoryName} 
+                        onChange={e => setNewCategoryName(e.target.value)} 
+                        placeholder="Enter category/subcategory name..." 
+                        className="category-input"
+                        style={{ width: '100%', height: '46px' }}
+                      />
+                    </div>
+                    <div style={{ minWidth: '200px' }}>
+                      <select
+                        value={parentCategorySelection}
+                        onChange={e => setParentCategorySelection(e.target.value)}
+                        className="srf-input-select"
+                        style={{ width: '100%', height: '46px', borderRadius: '10px', border: '1px solid #cbd5e1', padding: '0 1rem', fontSize: '0.95rem' }}
+                      >
+                        <option value="">No Parent (Main Category)</option>
+                        {categories.filter(c => !c.name.includes(' > ')).map(c => (
+                          <option key={c.id} value={c.name}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button onClick={handleAddCategory} className="btn-primary-custom" style={{ height: '46px' }}>Add Category</button>
                   </div>
 
                   <table className="admin-table">
@@ -1388,7 +1441,20 @@ export default function Home() {
                                 autoFocus
                               />
                             ) : (
-                              <span className="category-name-txt">{cat.name}</span>
+                              <span className="category-name-txt">
+                                {cat.name.includes(' > ') ? (
+                                  <>
+                                    <span style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: '500' }}>
+                                      {cat.name.split(' > ')[0]} &gt;{' '}
+                                    </span>
+                                    <span style={{ fontWeight: '600', color: '#0f172a' }}>
+                                      {cat.name.split(' > ')[1]}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span style={{ fontWeight: '700', color: '#0f172a' }}>{cat.name}</span>
+                                )}
+                              </span>
                             )}
                           </td>
                           <td className="text-right actions-cell">
@@ -1439,10 +1505,7 @@ export default function Home() {
             {/* 6. SRF CREDITS MANAGEMENT TAB */}
             {activeTab === 'srf_credits' && (
               <div className="tab-pane">
-                <div className="pane-header">
-                  <h2 className="pane-title">SRF Credits (Bucks) Management</h2>
-                  <p className="pane-desc">Distribute site credits and adjust employee allowances</p>
-                </div>
+
 
                 <div className="credits-grid">
                   
@@ -1526,10 +1589,7 @@ export default function Home() {
             {/* 7. MY ORDERS TAB (EMPLOYEE) */}
             {activeTab === 'my_orders' && (
               <div className="tab-pane">
-                <div className="pane-header">
-                  <h2 className="pane-title">My Orders</h2>
-                  <p className="pane-desc">Track your workwear orders and delivery status</p>
-                </div>
+
 
                 {orders.filter(o => o.employee_id === currentUser?.id && o.items > 0).length === 0 ? (
                   <div className="empty-card">
@@ -1702,17 +1762,15 @@ export default function Home() {
                         </div>
 
                         <div style={{ marginBottom: '1.5rem' }}>
-                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#64748b', marginBottom: '0.4rem' }}>Select Delivery Site / Hub Location</label>
-                          <select 
+                          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#64748b', marginBottom: '0.4rem' }}>Delivery Site / Address</label>
+                          <input 
+                            type="text"
                             value={deliverySite} 
                             onChange={(e) => setDeliverySite(e.target.value)} 
-                            style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0', color: '#0f172a', backgroundColor: '#fff', fontSize: '0.95rem' }}
-                          >
-                            <option>Site 42 - Main Logistics Hub</option>
-                            <option>HQ - Corporate Office</option>
-                            <option>Hub A - Northern District</option>
-                            <option>Hub B - Southern District</option>
-                          </select>
+                            placeholder="Enter your delivery address, site name, or hub location..."
+                            required
+                            style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0', color: '#0f172a', backgroundColor: '#fff', fontSize: '0.95rem', outline: 'none' }}
+                          />
                         </div>
 
                         <div>
@@ -1913,7 +1971,38 @@ export default function Home() {
                   <label>Category</label>
                   <select value={formData.categoryId} onChange={e => setFormData({...formData, categoryId: e.target.value})} className="srf-input-select">
                     <option value="">Uncategorized</option>
-                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                    {Object.entries(
+                      categories.reduce((acc, cat) => {
+                        const parts = cat.name.split(' > ');
+                        const parent = parts[0];
+                        if (!acc[parent]) acc[parent] = [];
+                        acc[parent].push(cat);
+                        return acc;
+                      }, {} as Record<string, typeof categories>)
+                    ).map(([parent, cats]) => {
+                      const hasSubs = cats.some(c => c.name.includes(' > '));
+                      if (hasSubs) {
+                        return (
+                          <optgroup key={parent} label={parent}>
+                            {cats.map(cat => {
+                              const parts = cat.name.split(' > ');
+                              const displayName = parts.length > 1 ? parts[1] : parts[0];
+                              return (
+                                <option key={cat.id} value={cat.id}>
+                                  {displayName}
+                                </option>
+                              );
+                            })}
+                          </optgroup>
+                        );
+                      } else {
+                        return cats.map(cat => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ));
+                      }
+                    })}
                   </select>
                 </div>
                 <div className="form-item">
@@ -2000,26 +2089,49 @@ export default function Home() {
             </div>
 
             <div className="modal-body" style={{ overflowY: 'auto' }}>
+              {editingEmpId && (
+                <div className="form-item" style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-end', minHeight: '38px', fontSize: '0.75rem', fontWeight: '800', letterSpacing: '0.5px', color: '#64748b', marginBottom: '4px' }}>EMPLOYEE ID</label>
+                  <input type="text" value={editingEmpId} disabled className="srf-input-text" style={{ borderRadius: '8px', height: '46px', padding: '0 1rem', border: '1px solid #cbd5e1', width: '100%', background: '#f1f5f9', color: '#64748b', cursor: 'not-allowed' }} />
+                </div>
+              )}
+
               <div className="form-item">
                 <label style={{ display: 'flex', alignItems: 'flex-end', minHeight: '38px', fontSize: '0.75rem', fontWeight: '800', letterSpacing: '0.5px', color: '#64748b', marginBottom: '4px' }}>FULL NAME</label>
-                <input type="text" value={empForm.name} onChange={e => setEmpForm({...empForm, name: e.target.value})} placeholder="John Smith" className="srf-input-text" style={{ borderRadius: '8px', height: '46px', padding: '0 1rem', border: '1px solid #cbd5e1', width: '100%' }} />
+                <input 
+                  type="text" 
+                  value={empForm.name} 
+                  onChange={e => setEmpForm({...empForm, name: e.target.value})} 
+                  placeholder="John Smith" 
+                  className="srf-input-text" 
+                  disabled={!!editingEmpId}
+                  style={{ borderRadius: '8px', height: '46px', padding: '0 1rem', border: '1px solid #cbd5e1', width: '100%', backgroundColor: editingEmpId ? '#f1f5f9' : '#ffffff', color: editingEmpId ? '#64748b' : '#0f172a', cursor: editingEmpId ? 'not-allowed' : 'text' }} 
+                />
               </div>
 
               <div className="form-row-2">
                 <div className="form-item">
                   <label style={{ display: 'flex', alignItems: 'flex-end', minHeight: '38px', fontSize: '0.75rem', fontWeight: '800', letterSpacing: '0.5px', color: '#64748b', marginBottom: '4px' }}>EMAIL (optional)</label>
-                  <input type="email" value={empForm.email} onChange={e => setEmpForm({...empForm, email: e.target.value})} placeholder="john@srfreeman.com" className="srf-input-text" style={{ borderRadius: '8px', height: '46px', padding: '0 1rem', border: '1px solid #cbd5e1', width: '100%' }} />
+                  <input 
+                    type="email" 
+                    value={empForm.email} 
+                    onChange={e => setEmpForm({...empForm, email: e.target.value})} 
+                    placeholder="john@srfreeman.com" 
+                    className="srf-input-text" 
+                    disabled={!!editingEmpId}
+                    style={{ borderRadius: '8px', height: '46px', padding: '0 1rem', border: '1px solid #cbd5e1', width: '100%', backgroundColor: editingEmpId ? '#f1f5f9' : '#ffffff', color: editingEmpId ? '#64748b' : '#0f172a', cursor: editingEmpId ? 'not-allowed' : 'text' }} 
+                  />
                 </div>
                 <div className="form-item">
                   <label style={{ display: 'flex', alignItems: 'flex-end', minHeight: '38px', fontSize: '0.75rem', fontWeight: '800', letterSpacing: '0.5px', color: '#64748b', marginBottom: '4px' }}>PASSWORD *</label>
-                  <input type="text" value={empForm.password} onChange={e => setEmpForm({...empForm, password: e.target.value})} placeholder={editingEmpId ? 'Leave blank to keep' : 'Temporary password'} className="srf-input-text" style={{ borderRadius: '8px', height: '46px', padding: '0 1rem', border: '1px solid #cbd5e1', width: '100%' }} />
+                  <input type="text" value={empForm.password} onChange={e => setEmpForm({...empForm, password: e.target.value})} placeholder={editingEmpId ? 'Leave blank to keep' : 'Temporary password'} className="srf-input-text" style={{ borderRadius: '8px', height: '46px', padding: '0 1rem', border: '1px solid #cbd5e1', width: '100%', backgroundColor: '#ffffff', color: '#0f172a' }} />
                 </div>
               </div>
 
               <div className="form-row-2">
                 <div className="form-item">
                   <label style={{ display: 'flex', alignItems: 'flex-end', minHeight: '38px', fontSize: '0.75rem', fontWeight: '800', letterSpacing: '0.5px', color: '#64748b', marginBottom: '4px' }}>ROLE</label>
-                  <select value={empForm.role} onChange={e => setEmpForm({...empForm, role: e.target.value})} className="srf-input-select" style={{ borderRadius: '8px', height: '46px', padding: '0 1rem', border: '1px solid #cbd5e1', width: '100%' }}>
+                  <select value={empForm.role} onChange={e => setEmpForm({...empForm, role: e.target.value})} className="srf-input-select" style={{ borderRadius: '8px', height: '46px', padding: '0 1rem', border: '1px solid #cbd5e1', width: '100%', backgroundColor: '#ffffff', color: '#0f172a' }}>
                     <option value="employee">employee</option>
                     <option value="super_admin">super_admin</option>
                   </select>
@@ -2038,7 +2150,8 @@ export default function Home() {
                       });
                     }} 
                     className="srf-input-select" 
-                    style={{ borderRadius: '8px', height: '46px', padding: '0 1rem', border: '1px solid #cbd5e1', width: '100%' }}
+                    disabled={!!editingEmpId}
+                    style={{ borderRadius: '8px', height: '46px', padding: '0 1rem', border: '1px solid #cbd5e1', width: '100%', backgroundColor: editingEmpId ? '#f1f5f9' : '#ffffff', color: editingEmpId ? '#64748b' : '#0f172a', cursor: editingEmpId ? 'not-allowed' : 'default' }}
                   >
                     {Object.keys(levelCreditsMap).map(lvl => (
                       <option key={lvl} value={lvl}>{lvl} ({levelCreditsMap[lvl]} cr)</option>
@@ -2050,30 +2163,43 @@ export default function Home() {
               <div className="form-row-2">
                 <div className="form-item">
                   <label style={{ display: 'flex', alignItems: 'flex-end', minHeight: '38px', fontSize: '0.75rem', fontWeight: '800', letterSpacing: '0.5px', color: '#64748b', marginBottom: '4px' }}>HIRE DATE *</label>
-                  <input type="date" value={empForm.hireDate} onChange={e => setEmpForm({...empForm, hireDate: e.target.value})} className="srf-input-text" style={{ borderRadius: '8px', height: '46px', padding: '0 1rem', border: '1px solid #cbd5e1', width: '100%' }} />
+                  <input 
+                    type="date" 
+                    value={empForm.hireDate} 
+                    onChange={e => setEmpForm({...empForm, hireDate: e.target.value})} 
+                    className="srf-input-text" 
+                    disabled={!!editingEmpId}
+                    style={{ borderRadius: '8px', height: '46px', padding: '0 1rem', border: '1px solid #cbd5e1', width: '100%', backgroundColor: editingEmpId ? '#f1f5f9' : '#ffffff', color: editingEmpId ? '#64748b' : '#0f172a', cursor: editingEmpId ? 'not-allowed' : 'text' }} 
+                  />
                 </div>
-                <div className="form-item">
-                  <label style={{ display: 'flex', alignItems: 'flex-end', minHeight: '38px', fontSize: '0.75rem', fontWeight: '800', letterSpacing: '0.5px', color: '#64748b', marginBottom: '4px' }}>STARTING CREDITS (default: 50)</label>
-                  <input type="number" value={empForm.balance} onChange={e => setEmpForm({...empForm, balance: e.target.value})} className="srf-input-text" style={{ borderRadius: '8px', height: '46px', padding: '0 1rem', border: '1px solid #cbd5e1', width: '100%' }} />
-                </div>
+                {!editingEmpId ? (
+                  <div className="form-item">
+                    <label style={{ display: 'flex', alignItems: 'flex-end', minHeight: '38px', fontSize: '0.75rem', fontWeight: '800', letterSpacing: '0.5px', color: '#64748b', marginBottom: '4px' }}>STARTING CREDITS (default: 50)</label>
+                    <input type="number" value={empForm.balance} onChange={e => setEmpForm({...empForm, balance: e.target.value})} className="srf-input-text" style={{ borderRadius: '8px', height: '46px', padding: '0 1rem', border: '1px solid #cbd5e1', width: '100%' }} />
+                  </div>
+                ) : (
+                  <div className="form-item" />
+                )}
               </div>
 
-              <div style={{
-                background: 'rgba(114, 29, 29, 0.04)',
-                border: '1px solid rgba(114, 29, 29, 0.1)',
-                borderRadius: '10px',
-                padding: '1rem 1.2rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.8rem',
-                color: '#721D1D',
-                fontSize: '0.92rem',
-                fontWeight: '600',
-                marginTop: '0.5rem'
-              }}>
-                <i className='bx bx-link' style={{ fontSize: '1.3rem' }}></i>
-                <span>Will receive <strong style={{ fontWeight: '800' }}>{empForm.balance || 0} credits</strong> on onboarding</span>
-              </div>
+              {!editingEmpId && (
+                <div style={{
+                  background: 'rgba(114, 29, 29, 0.04)',
+                  border: '1px solid rgba(114, 29, 29, 0.1)',
+                  borderRadius: '10px',
+                  padding: '1rem 1.2rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.8rem',
+                  color: '#721D1D',
+                  fontSize: '0.92rem',
+                  fontWeight: '600',
+                  marginTop: '0.5rem'
+                }}>
+                  <i className='bx bx-link' style={{ fontSize: '1.3rem' }}></i>
+                  <span>Will receive <strong style={{ fontWeight: '800' }}>{empForm.balance || 0} credits</strong> on onboarding</span>
+                </div>
+              )}
             </div>
 
             <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.8rem', padding: '1.5rem 2rem', borderTop: '1px solid #f1f5f9' }}>
@@ -2312,9 +2438,8 @@ const styleBlock = `
     font-size: 0.85rem;
     font-weight: 800;
     letter-spacing: 2px;
-    color: #f87171;
+    color: #ffffff;
     text-transform: uppercase;
-    opacity: 0.85;
   }
 
   /* Menu Section labels */
@@ -2495,16 +2620,31 @@ const styleBlock = `
     color: white;
     flex-shrink: 0;
     border-bottom: 2px solid rgba(130, 19, 43, 0.3);
+    overflow: hidden;
+  }
+
+  .admin-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=1920');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.15;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    z-index: 1;
   }
 
   .header-grid-overlay {
     position: absolute;
     inset: 0;
     background-image: 
-      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-    background-size: 24px 24px;
+      linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    background-size: 40px 40px;
     pointer-events: none;
+    z-index: 2;
   }
 
   .header-content {
@@ -2537,7 +2677,7 @@ const styleBlock = `
     font-family: 'Outfit', sans-serif;
     font-size: 0.9rem;
     font-weight: 800;
-    color: #fca5a5;
+    color: #ffffff;
     letter-spacing: 3px;
     margin-bottom: 0.4rem;
   }
@@ -2557,7 +2697,7 @@ const styleBlock = `
     font-family: 'Inter', sans-serif;
     font-size: 0.8rem;
     font-weight: 700;
-    color: rgba(255,255,255,0.6);
+    color: #ffffff;
     letter-spacing: 2px;
     text-transform: uppercase;
   }
@@ -2619,7 +2759,7 @@ const styleBlock = `
   /* ===== SHOP BANNER DESIGN ===== */
   .shop-banner {
     position: relative;
-    background: linear-gradient(135deg, #721D1D 0%, #460714 100%);
+    background: linear-gradient(135deg, #721D1D 0%, #4c0817 100%);
     border-radius: 16px;
     padding: 3.5rem 3rem;
     color: white;
@@ -2632,19 +2772,28 @@ const styleBlock = `
     box-shadow: 0 8px 30px rgba(130, 19, 43, 0.15);
   }
 
+  .shop-banner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=1920');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.15;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    z-index: 1;
+  }
+
   .shop-banner-overlay {
     position: absolute;
     inset: 0;
     background-image: 
-      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-      url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=1920');
-    background-size: 24px 24px, 24px 24px, cover;
-    background-position: center, center, center;
-    opacity: 0.18;
+      linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    background-size: 40px 40px;
     pointer-events: none;
-    mix-blend-mode: overlay;
-    z-index: 1;
+    z-index: 2;
   }
 
   .shop-banner-left, .shop-banner-right {
@@ -2661,7 +2810,7 @@ const styleBlock = `
     font-weight: 800;
     letter-spacing: 2.5px;
     display: inline-block;
-    color: #fca5a5;
+    color: #ffffff;
     font-family: 'Outfit', sans-serif;
   }
 

@@ -11,7 +11,11 @@ export default function CategoryPage() {
   const { globalProducts: products, categories, addToCart } = useStore();
 
   const category = categories.find(c => c.id === Number(id));
-  const categoryProducts = products.filter(p => p.category_id === Number(id));
+  const categoryProducts = products.filter(p => {
+    if (p.category_id === Number(id)) return true;
+    const prodCat = categories.find(c => c.id === p.category_id);
+    return prodCat && category && prodCat.name.startsWith(category.name + ' > ');
+  });
 
   if (!category) {
     return (

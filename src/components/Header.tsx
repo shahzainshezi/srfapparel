@@ -33,9 +33,21 @@ export default function Header() {
             <div className="dropdown">
               <Link href="/#categories" className="nav-link">Apparel <i className='bx bx-chevron-down'></i></Link>
               <div className="dropdown-content">
-                {categories.map(cat => (
-                  <Link key={cat.id} href={`/category/${cat.id}`}>{cat.name}</Link>
-                ))}
+                {categories.map(cat => {
+                  const parts = cat.name.split(' > ');
+                  if (parts.length > 1) {
+                    return (
+                      <Link key={cat.id} href={`/category/${cat.id}`} style={{ paddingLeft: '2rem', fontSize: '0.85rem', color: '#64748b' }}>
+                        — {parts[1]}
+                      </Link>
+                    );
+                  }
+                  return (
+                    <Link key={cat.id} href={`/category/${cat.id}`} style={{ fontWeight: '600' }}>
+                      {cat.name}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
             <Link href="/#shop" className="nav-link">All Products</Link>
@@ -113,11 +125,21 @@ export default function Header() {
           <Link href="/" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
           <div style={{ padding: '0.5rem 0', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Departments</span>
-            {categories.map(cat => (
-              <Link key={cat.id} href={`/category/${cat.id}`} className="mobile-link" onClick={() => setIsMobileMenuOpen(false)} style={{ paddingLeft: '1rem' }}>
-                {cat.name}
-              </Link>
-            ))}
+            {categories.map(cat => {
+              const parts = cat.name.split(' > ');
+              if (parts.length > 1) {
+                return (
+                  <Link key={cat.id} href={`/category/${cat.id}`} className="mobile-link" onClick={() => setIsMobileMenuOpen(false)} style={{ paddingLeft: '2rem', fontSize: '0.85rem', color: '#64748b' }}>
+                    — {parts[1]}
+                  </Link>
+                );
+              }
+              return (
+                <Link key={cat.id} href={`/category/${cat.id}`} className="mobile-link" onClick={() => setIsMobileMenuOpen(false)} style={{ paddingLeft: '1rem', fontWeight: '600' }}>
+                  {cat.name}
+                </Link>
+              );
+            })}
           </div>
           <Link href="/#shop" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>All Products</Link>
           {currentUser && (
