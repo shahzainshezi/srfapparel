@@ -1163,9 +1163,6 @@ export default function Home() {
                     />
                   </div>
                   <div className="pane-actions-row">
-                    <button className="btn-secondary-custom" onClick={issueAnnualBucks}>
-                      <i className='bx bx-refresh'></i> Issue Annual Bucks
-                    </button>
                     <button className="btn-primary-custom" onClick={() => { setEditingEmpId(null); setEmpForm({ name: '', email: '', password: '', site: 'Apprentice', balance: '50', role: 'employee', hireDate: '' }); setIsEmpModalOpen(true); }}>
                       <i className='bx bx-user-plus'></i> Add Employee
                     </button>
