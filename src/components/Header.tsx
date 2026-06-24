@@ -7,7 +7,7 @@ import { useState } from "react";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 export default function Header() {
-  const { credits, cart, cartTotal, isCartOpen, setIsCartOpen, removeFromCart, currentUser, logout, categories } = useStore();
+  const { credits, cart, cartTotal, isCartOpen, setIsCartOpen, removeFromCart, currentUser, logout, categories, updateCartQuantity } = useStore();
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -72,7 +72,7 @@ export default function Header() {
             {currentUser && (
               <div className="cart-icon" onClick={() => setIsCartOpen(true)} style={{ cursor: 'pointer' }}>
                 <i className='bx bx-cart-alt'></i>
-                <span className="cart-count">{cart.length}</span>
+                <span className="cart-count">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
               </div>
             )}
 
@@ -162,7 +162,7 @@ export default function Header() {
         <>
           <div className={`cart-drawer ${isCartOpen ? 'active' : ''}`} style={isCartOpen ? { right: 0 } : {}}>
             <div className="cart-header">
-              <h2>Your Order <span className="cart-count-badge">{cart.length} Items</span></h2>
+              <h2>Your Order <span className="cart-count-badge">{cart.reduce((sum, item) => sum + item.quantity, 0)} Items</span></h2>
               <button className="close-cart" onClick={() => setIsCartOpen(false)}><i className='bx bx-x'></i></button>
             </div>
 
@@ -191,7 +191,21 @@ export default function Header() {
                         {item.selectedColor && `Color: ${item.selectedColor}`}
                       </div>
                       <div className="cart-item-price">{item.price} <i className='bx bxs-coin-stack'></i></div>
-                      <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.2rem' }}>Qty: {item.quantity}</div>
+                      <div className="cart-item-qty" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <button 
+                          onClick={() => updateCartQuantity(item.cartItemId, item.quantity - 1)}
+                          style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #cbd5e1', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#64748b' }}
+                        >
+                          -
+                        </button>
+                        <span style={{ fontSize: '0.9rem', fontWeight: '600', minWidth: '20px', textAlign: 'center', color: '#0f172a' }}>{item.quantity}</span>
+                        <button 
+                          onClick={() => updateCartQuantity(item.cartItemId, item.quantity + 1)}
+                          style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #cbd5e1', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#64748b' }}
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
                     <button className="remove-item" onClick={() => removeFromCart(item.cartItemId)}><i className='bx bx-trash'></i></button>
                   </div>

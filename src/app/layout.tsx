@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import Preloader from "@/components/Preloader";
+import StickyCart from "@/components/StickyCart";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: '--font-body' });
@@ -32,6 +33,7 @@ export default function RootLayout({
           <ConditionalLayout>
             {children}
           </ConditionalLayout>
+          <StickyCart />
         </StoreProvider>
         
         {/* Google Translate Integration */}

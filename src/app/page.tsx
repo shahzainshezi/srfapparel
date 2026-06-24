@@ -14,7 +14,7 @@ export default function Home() {
     updateEmployeeBalance, issueAnnualBucks, addEmployee, editEmployee, deleteEmployee, updateOrderStatus,
     logout, currentUser,
     credits, cart, addToCart, removeFromCart, cartTotal, isCartOpen, setIsCartOpen,
-    checkout
+    checkout, updateCartQuantity
   } = useStore();
   
   const router = useRouter();
@@ -60,6 +60,7 @@ export default function Home() {
   const [selectedColor, setSelectedColor] = useState<string | undefined>(undefined);
   const [activeImage, setActiveImage] = useState<string>('');
   const [activeDetailTab, setActiveDetailTab] = useState('details');
+  const [quantity, setQuantity] = useState(1);
   
   // Checkout states
   const [deliverySite, setDeliverySite] = useState("");
@@ -111,19 +112,36 @@ export default function Home() {
     'Red': '#ef4444',
     'Blue': '#3b82f6',
     'Navy': '#1e3a8a',
+    'New Navy': '#1B2A4A',
     'Grey': '#64748b',
     'Gray': '#64748b',
+    'Heather Grey': '#9CA3AF',
     'Green': '#22c55e',
     'Yellow': '#eab308',
     'Orange': '#f97316',
     'Purple': '#a855f7',
     'Pink': '#ec4899',
     'Brown': '#78350f',
+    'Carhartt Brown': '#8C5229',
+    'Brite Lime': '#CCFF00',
     'Beige': '#f5f5dc',
     'Maroon': '#800000',
     'Gold': '#ffd700',
     'Silver': '#c0c0c0',
-    'Charcoal': '#36454f'
+    'Charcoal': '#36454f',
+    'Anthracite': '#3E4149',
+    'Dark Khaki': '#998D76',
+    'Steel': '#7A8B99',
+    'Fresh Water Blue': '#85B4D0'
+  };
+
+  const getColorHex = (colorName: string) => {
+    if (colorMap[colorName]) return colorMap[colorName];
+    const lower = colorName.toLowerCase();
+    for (const [k, v] of Object.entries(colorMap)) {
+      if (lower.includes(k.toLowerCase())) return v;
+    }
+    return '#e2e8f0';
   };
 
   const levelCreditsMap: { [key: string]: number } = {
@@ -239,12 +257,131 @@ export default function Home() {
     }
   };
 
+  const mapProductImage = (url: string): string => {
+    if (!url) return '';
+    if (url.includes('SR-FREEMAN-6-25-scaled.jpg')) {
+      return '/images/products/prod_9_brown.png';
+    }
+    if (url.endsWith('/1.jpg') || url.includes('/1.jpg')) {
+      return '/images/products/prod_9_grey.png';
+    }
+    if (url.includes('288_1-scaled.jpg')) {
+      return '/images/products/prod_9_navy.png';
+    }
+    return url;
+  };
+
   const handleProductClick = (product: any) => {
     setSelectedProductId(product.id);
     setSelectedSize(product.sizes && product.sizes.length > 0 ? product.sizes[0] : undefined);
-    setSelectedColor(product.colors && product.colors.length > 0 ? product.colors[0] : undefined);
-    setActiveImage(product.image);
+    setQuantity(1);
+    
+    const firstColor = product.colors && product.colors.length > 0 ? product.colors[0] : undefined;
+    setSelectedColor(firstColor);
+    
+    // Auto-set the correct image for first color
+    if (product.id === 2) {
+      if (firstColor === 'Fresh Water Blue') setActiveImage(product.image);
+      else if (firstColor === 'Dark Khaki') setActiveImage('/images/products/prod_2_dark_khaki_front.png');
+      else if (firstColor === 'Navy') setActiveImage('/images/products/prod_2_navy_front.png');
+      else if (firstColor === 'Steel') setActiveImage('/images/products/prod_2_steel_front.png');
+    } else if (product.id === 5) {
+      if (firstColor === 'Anthracite') setActiveImage(product.image);
+      else if (firstColor === 'Black') setActiveImage('/images/products/prod_5_black_front.png');
+      else if (firstColor === 'Navy') setActiveImage('/images/products/prod_5_navy_front.png');
+      else if (firstColor === 'White') setActiveImage('/images/products/prod_5_white_front.png');
+    } else if (product.id === 6) {
+      if (firstColor === 'Black') setActiveImage(product.image);
+      else if (firstColor === 'Midnight Navy') setActiveImage('/images/products/prod_6_navy_front.png');
+      else if (firstColor === 'White') setActiveImage('/images/products/prod_6_white_front.png');
+    } else if (product.id === 8) {
+      if (firstColor === 'Black') setActiveImage('/images/products/prod_8_black_front.png');
+      else if (firstColor === 'Carbon Heather') setActiveImage('/images/products/prod_8_carbon_front.png');
+      else if (firstColor === 'Heather Grey') setActiveImage(product.image);
+      else if (firstColor === 'Navy') setActiveImage('/images/products/prod_8_navy_front.png');
+    } else if (product.id === 9) {
+      if (firstColor === 'Black') setActiveImage(product.image);
+      else if (firstColor === 'Carhartt Brown') setActiveImage('/images/products/prod_9_brown.png');
+      else if (firstColor === 'Heather Grey') setActiveImage('/images/products/prod_9_grey.png');
+      else if (firstColor === 'New Navy') setActiveImage('/images/products/prod_9_navy.png');
+    } else {
+      setActiveImage(product.image);
+    }
     setActiveDetailTab('details');
+  };
+
+  const handleColorSelect = (color: string, product: any) => {
+    setSelectedColor(color);
+    
+    // Find matching image for this color
+    let matchedImage = '';
+    if (product.id === 2) {
+      if (color === 'Fresh Water Blue') {
+        matchedImage = product.image;
+      } else if (color === 'Dark Khaki') {
+        matchedImage = '/images/products/prod_2_dark_khaki_front.png';
+      } else if (color === 'Navy') {
+        matchedImage = '/images/products/prod_2_navy_front.png';
+      } else if (color === 'Steel') {
+        matchedImage = '/images/products/prod_2_steel_front.png';
+      }
+    } else if (product.id === 5) {
+      if (color === 'Anthracite') {
+        matchedImage = product.image;
+      } else if (color === 'Black') {
+        matchedImage = '/images/products/prod_5_black_front.png';
+      } else if (color === 'Navy') {
+        matchedImage = '/images/products/prod_5_navy_front.png';
+      } else if (color === 'White') {
+        matchedImage = '/images/products/prod_5_white_front.png';
+      }
+    } else if (product.id === 6) {
+      if (color === 'Black') {
+        matchedImage = product.image;
+      } else if (color === 'Midnight Navy') {
+        matchedImage = '/images/products/prod_6_navy_front.png';
+      } else if (color === 'White') {
+        matchedImage = '/images/products/prod_6_white_front.png';
+      }
+    } else if (product.id === 8) {
+      if (color === 'Black') {
+        matchedImage = '/images/products/prod_8_black_front.png';
+      } else if (color === 'Carbon Heather') {
+        matchedImage = '/images/products/prod_8_carbon_front.png';
+      } else if (color === 'Heather Grey') {
+        matchedImage = product.image;
+      } else if (color === 'Navy') {
+        matchedImage = '/images/products/prod_8_navy_front.png';
+      }
+    } else if (product.id === 9) {
+      if (color === 'Black') {
+        matchedImage = product.image;
+      } else if (color === 'Carhartt Brown') {
+        matchedImage = '/images/products/prod_9_brown.png';
+      } else if (color === 'Heather Grey') {
+        matchedImage = '/images/products/prod_9_grey.png';
+      } else if (color === 'New Navy') {
+        matchedImage = '/images/products/prod_9_navy.png';
+      }
+    } else {
+      // Fallback keyword matching for other products
+      const cleanGallery = product.gallery ? product.gallery.filter((g: string) => g !== 'out_of_stock') : [];
+      const galleryImages = [product.image, ...cleanGallery];
+      const lowerColor = color.toLowerCase();
+      const found = galleryImages.find(img => {
+        const lowerImg = img.toLowerCase();
+        return lowerImg.includes(lowerColor) || 
+               (lowerColor.includes('navy') && lowerImg.includes('navy')) ||
+               (lowerColor.includes('grey') && (lowerImg.includes('grey') || lowerImg.includes('gray'))) ||
+               (lowerColor.includes('brown') && lowerImg.includes('brown')) ||
+               (lowerColor.includes('black') && lowerImg.includes('black'));
+      });
+      if (found) matchedImage = found;
+    }
+    
+    if (matchedImage) {
+      setActiveImage(mapProductImage(matchedImage));
+    }
   };
 
   // Calculations for stats
@@ -395,7 +532,7 @@ export default function Home() {
                     padding: '0.15rem 0.45rem',
                     borderRadius: '50px'
                   }}>
-                    {cart.length}
+                    {cart.reduce((sum, item) => sum + item.quantity, 0)}
                   </span>
                 )}
               </button>
@@ -463,9 +600,9 @@ export default function Home() {
               <img src="/logo.webp" alt="S.R. Freeman" className="mobile-logo" />
               <button onClick={() => setIsCartOpen(true)} className="mobile-cart-trigger" style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.8rem', cursor: 'pointer', position: 'relative', padding: 0, display: 'flex', alignItems: 'center' }}>
                 <i className='bx bx-shopping-bag'></i>
-                {cart.length > 0 && (
+                 {cart.length > 0 && (
                   <span style={{ position: 'absolute', top: '-6px', right: '-8px', background: '#721D1D', color: 'white', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '1.5px solid #0f172a' }}>
-                    {cart.length}
+                    {cart.reduce((sum, item) => sum + item.quantity, 0)}
                   </span>
                 )}
               </button>
@@ -637,7 +774,7 @@ export default function Home() {
                       <div className="product-view-gallery">
                         <div className="main-image-frame">
                           <img 
-                            src={activeImage || selectedProduct.image} 
+                            src={mapProductImage(activeImage || selectedProduct.image)} 
                             alt={selectedProduct.title} 
                             className="main-image" 
                           />
@@ -646,15 +783,18 @@ export default function Home() {
                         {/* Thumbnail Images */}
                         {selectedProduct.gallery && selectedProduct.gallery.filter((g: string) => g !== 'out_of_stock').length > 0 && (
                           <div className="thumbnails-grid">
-                            {[selectedProduct.image, ...selectedProduct.gallery.filter((g: string) => g !== 'out_of_stock')].map((img: string, idx: number) => (
-                              <div 
-                                key={idx}
-                                onClick={() => setActiveImage(img)}
-                                className={`thumbnail-frame ${activeImage === img ? 'active' : ''}`}
-                              >
-                                <img src={img} alt="Thumbnail preview" />
-                              </div>
-                            ))}
+                            {[selectedProduct.image, ...selectedProduct.gallery.filter((g: string) => g !== 'out_of_stock')].map((img: string, idx: number) => {
+                              const localImg = mapProductImage(img);
+                              return (
+                                <div 
+                                  key={idx}
+                                  onClick={() => setActiveImage(localImg)}
+                                  className={`thumbnail-frame ${mapProductImage(activeImage || '') === localImg ? 'active' : ''}`}
+                                >
+                                  <img src={localImg} alt="Thumbnail preview" />
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -696,11 +836,11 @@ export default function Home() {
                             <span className="choice-label">Select Color</span>
                             <div className="color-swatches" style={{ marginTop: '0.4rem' }}>
                               {selectedProduct.colors.map((color: string) => {
-                                const colorHex = colorMap[color] || '#e2e8f0';
+                                const colorHex = getColorHex(color);
                                 return (
                                   <div 
                                     key={color}
-                                    onClick={() => setSelectedColor(color)}
+                                    onClick={() => handleColorSelect(color, selectedProduct)}
                                     className={`color-swatch-item ${selectedColor === color ? 'active' : ''}`}
                                   >
                                     <div className="swatch-circle" style={{ background: colorHex }}>
@@ -718,20 +858,51 @@ export default function Home() {
                           </div>
                         )}
 
-                        {/* Add / Action button */}
+                        {/* Quantity selector & Add / Action button */}
                         {(() => {
                           const isSoldOut = selectedProduct.gallery?.includes('out_of_stock') || false;
                           return (
-                            <button 
-                              onClick={() => {
-                                addToCart(selectedProduct, selectedSize, selectedColor);
-                              }}
-                              disabled={isSoldOut}
-                              className="btn-primary-custom full-width checkout-btn-detail"
-                              style={{ height: '58px', fontSize: '1.05rem', marginTop: '1.5rem', borderRadius: '12px' }}
-                            >
-                              {isSoldOut ? "Out of Stock" : "Add to Order"} <i className='bx bx-cart-alt' style={{ fontSize: '1.3rem' }}></i>
-                            </button>
+                            <>
+                              {!isSoldOut && (
+                                <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
+                                  <span className="choice-label">Quantity</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.4rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: '12px', background: '#f8fafc', overflow: 'hidden' }}>
+                                      <button 
+                                        onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                                        style={{ width: '40px', height: '40px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 'bold', color: '#64748b', transition: 'background 0.2s' }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = '#e2e8f0'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                      >
+                                        -
+                                      </button>
+                                      <span style={{ fontSize: '1rem', fontWeight: '700', minWidth: '35px', textAlign: 'center', color: '#0f172a' }}>{quantity}</span>
+                                      <button 
+                                        onClick={() => setQuantity(q => q + 1)}
+                                        style={{ width: '40px', height: '40px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 'bold', color: '#64748b', transition: 'background 0.2s' }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = '#e2e8f0'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              <button 
+                                onClick={() => {
+                                  if (!isSoldOut) {
+                                    addToCart(selectedProduct, selectedSize, selectedColor, quantity);
+                                    setQuantity(1);
+                                  }
+                                }}
+                                disabled={isSoldOut}
+                                className="btn-primary-custom full-width checkout-btn-detail"
+                                style={{ height: '58px', fontSize: '1.05rem', marginTop: !isSoldOut ? '0rem' : '1.5rem', borderRadius: '12px' }}
+                              >
+                                {isSoldOut ? "Out of Stock" : "Add to Order"} <i className='bx bx-cart-alt' style={{ fontSize: '1.3rem' }}></i>
+                              </button>
+                            </>
                           );
                         })()}
 
@@ -768,7 +939,7 @@ export default function Home() {
                               </div>
                             ) : (
                               <p className="tab-details-text">
-                                Orders placed using SRF Bucks are processed internally. Gear is typically delivered directly to your site supervisor's office within 5-7 business days. 
+                                Orders placed using SRF Bucks are processed internally. Gear is typically delivered directly to your specified delivery address within 5-7 business days.
                               </p>
                             )}
                           </div>
@@ -1867,7 +2038,7 @@ export default function Home() {
         <>
           <div className={`cart-drawer ${isCartOpen ? 'active' : ''}`} style={isCartOpen ? { right: 0 } : {}}>
             <div className="cart-header">
-              <h2>Your Order <span className="cart-count-badge">{cart.length} Items</span></h2>
+              <h2>Your Order <span className="cart-count-badge">{cart.reduce((sum, item) => sum + item.quantity, 0)} Items</span></h2>
               <button className="close-cart" onClick={() => setIsCartOpen(false)}><i className='bx bx-x'></i></button>
             </div>
 
@@ -1896,7 +2067,21 @@ export default function Home() {
                         {item.selectedColor && `Color: ${item.selectedColor}`}
                       </div>
                       <div className="cart-item-price">{item.price} <i className='bx bxs-coin-stack'></i></div>
-                      <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.2rem' }}>Qty: {item.quantity}</div>
+                      <div className="cart-item-qty" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <button 
+                          onClick={() => updateCartQuantity(item.cartItemId, item.quantity - 1)}
+                          style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #cbd5e1', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#64748b' }}
+                        >
+                          -
+                        </button>
+                        <span style={{ fontSize: '0.9rem', fontWeight: '600', minWidth: '20px', textAlign: 'center', color: '#0f172a' }}>{item.quantity}</span>
+                        <button 
+                          onClick={() => updateCartQuantity(item.cartItemId, item.quantity + 1)}
+                          style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #cbd5e1', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#64748b' }}
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
                     <button className="remove-item" onClick={() => removeFromCart(item.cartItemId)}><i className='bx bx-trash'></i></button>
                   </div>
@@ -3134,12 +3319,16 @@ const styleBlock = `
     display: grid;
     grid-template-columns: 1fr 1.1fr;
     gap: 3.5rem;
+    align-items: start;
   }
 
   .product-view-gallery {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    position: sticky;
+    top: 120px;
+    align-self: start;
   }
 
   .main-image-frame {

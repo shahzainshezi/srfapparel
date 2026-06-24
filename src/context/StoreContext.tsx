@@ -37,8 +37,9 @@ export interface Employee {
 interface StoreContextType {
   credits: number;
   cart: CartItem[];
-  addToCart: (product: any, selectedSize?: string, selectedColor?: string) => void;
+  addToCart: (product: any, selectedSize?: string, selectedColor?: string, quantityToAdd?: number) => void;
   removeFromCart: (cartItemId: string) => void;
+  updateCartQuantity: (cartItemId: string, newQty: number) => void;
   cartTotal: number;
   checkout: (deliveryInfo?: any) => Promise<boolean>;
   isCartOpen: boolean;
@@ -214,8 +215,12 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
 
   // Keep cart in localStorage
   useEffect(() => {
-    if (isMounted && cart.length > 0) {
-      localStorage.setItem('srf_cart', JSON.stringify(cart));
+    if (isMounted) {
+      if (cart.length > 0) {
+        localStorage.setItem('srf_cart', JSON.stringify(cart));
+      } else {
+        localStorage.removeItem('srf_cart');
+      }
     }
   }, [cart, isMounted]);
 
@@ -229,18 +234,30 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   // --- CART FUNCTIONS ---
   const cartTotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
 
-  const addToCart = (product: any, selectedSize?: string, selectedColor?: string) => {
+  const addToCart = (product: any, selectedSize?: string, selectedColor?: string, quantityToAdd: number = 1) => {
     setCart((prevCart) => {
       const cartItemId = `${product.id}-${selectedSize || 'nosize'}-${selectedColor || 'nocolor'}`;
       const existing = prevCart.find((item) => item.cartItemId === cartItemId);
       if (existing) {
         return prevCart.map((item) =>
-          item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item
+          item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + quantityToAdd } : item
         );
       }
-      return [...prevCart, { ...product, quantity: 1, selectedSize, selectedColor, cartItemId }];
+      return [...prevCart, { ...product, quantity: quantityToAdd, selectedSize, selectedColor, cartItemId }];
     });
     setIsCartOpen(true);
+  };
+
+  const updateCartQuantity = (cartItemId: string, newQty: number) => {
+    if (newQty <= 0) {
+      removeFromCart(cartItemId);
+      return;
+    }
+    setCart((prevCart) =>
+      prevCart.map((item) =>
+        item.cartItemId === cartItemId ? { ...item, quantity: newQty } : item
+      )
+    );
   };
 
   const removeFromCart = (cartItemId: string) => {
@@ -542,6 +559,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
         checkout,
         isCartOpen,
         setIsCartOpen,
+        updateCartQuantity,
         currentUser,
         isAuthLoading,
         login,
