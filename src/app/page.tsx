@@ -634,7 +634,9 @@ export default function Home() {
                    activeTab === 'my_orders' ? 'TRACK YOUR WORKWEAR ORDERS AND DELIVERY STATUS' :
                    activeTab === 'shop' ? 'Company apparel, earned by your crew. Spend your SRF Credits below.' :
                    currentUser?.role === 'super_admin' ? 'SRF APPAREL — COMMAND CENTER' :
-                   `Welcome back, ${currentUser?.name || 'User'}! • Balance: ${credits} Bucks`}
+                   (
+                     <>Welcome back, {currentUser?.name || 'User'}!<br /> • Balance: {credits} Bucks</>
+                   )}
                 </div>
               </div>
 
