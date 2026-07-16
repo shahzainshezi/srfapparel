@@ -26,6 +26,29 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet' />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined') {
+                const originalRemoveChild = Node.prototype.removeChild;
+                Node.prototype.removeChild = function(child) {
+                  if (child.parentNode !== this) {
+                    return child;
+                  }
+                  return originalRemoveChild.call(this, child);
+                };
+
+                const originalInsertBefore = Node.prototype.insertBefore;
+                Node.prototype.insertBefore = function(newNode, referenceNode) {
+                  if (referenceNode && referenceNode.parentNode !== this) {
+                    return newNode;
+                  }
+                  return originalInsertBefore.call(this, newNode, referenceNode);
+                };
+              }
+            `
+          }}
+        />
       </head>
       <body className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
         <Preloader />
