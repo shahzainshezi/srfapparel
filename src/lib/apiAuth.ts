@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
  * Returns a 401 NextResponse if unauthorized, or null if authorized.
  */
 export function validateApiAuth(request: Request): NextResponse | null {
-  const secretKey = process.env.CLIENT_API_SECRET || 'srf_secret_api_key_2026_x9k'
+  const secretKey = process.env.CLIENT_API_SECRET || 'placeholder_client_secret_key'
   const authHeader = request.headers.get('Authorization')
 
   if (!authHeader) {
